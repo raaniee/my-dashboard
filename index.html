@@ -20,8 +20,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .metric{background:#f4f3f0;border-radius:8px;padding:.875rem 1rem}
 .metric .lbl{font-size:12px;color:#888;margin-bottom:4px}
 .metric .val{font-size:22px;font-weight:500;color:#1a1a18}
-.proj-card{background:#fff;border:1px solid #e5e3dc;border-radius:12px;padding:.875rem 1rem;cursor:pointer;transition:border-color .15s}
-.proj-card:hover{border-color:#aaa}
+.proj-card{background:#fff;border:1px solid #e5e3dc;border-radius:12px;padding:.875rem 1rem}
 .proj-name{font-size:13px;font-weight:500;color:#1a1a18;margin-bottom:4px}
 .proj-sub{font-size:11px;color:#888;margin-bottom:8px}
 .bar-wrap{height:4px;background:#f0ede8;border-radius:2px;overflow:hidden}
@@ -29,11 +28,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .pct-row{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
 .pct-num{font-size:11px;color:#aaa}
 .status-badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px}
-.s-active{background:#E1F5EE;color:#085041}
-.s-review{background:#FAEEDA;color:#633806}
-.s-done{background:#EAF3DE;color:#27500A}
-.s-hold{background:#F1EFE8;color:#444441}
-.s-urgent{background:#FCEBEB;color:#791F1F}
+.s-진행중{background:#E1F5EE;color:#085041}
+.s-검토중{background:#FAEEDA;color:#633806}
+.s-완료{background:#EAF3DE;color:#27500A}
+.s-보류{background:#F1EFE8;color:#444441}
+.s-긴급{background:#FCEBEB;color:#791F1F}
 .row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0ede8}
 .row:last-child{border-bottom:none}
 .row-main{flex:1;font-size:13px;color:#1a1a18}
@@ -65,8 +64,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .dn{font-size:11px;font-weight:500;color:#1a1a18}
 .edot{font-size:9px;color:#888;display:flex;align-items:center;gap:2px;margin-top:1px;overflow:hidden}
 .edot::before{content:'';flex-shrink:0;width:4px;height:4px;border-radius:50%;background:#378ADD}
-.edot.g::before{background:#639922}
-.edot.a::before{background:#BA7517}
 .nav-r{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .nav-r h3{font-size:14px;font-weight:500;color:#1a1a18}
 .nbtn{background:none;border:1px solid #ddd;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;color:#666}
@@ -89,12 +86,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .amount{font-size:12px;color:#888;white-space:nowrap}
 h2{font-size:18px;font-weight:500;margin-bottom:2px}
 .date-str{font-size:12px;color:#aaa;margin-bottom:1.25rem}
+.save-notice{font-size:11px;color:#aaa;margin-left:8px}
 @media(max-width:600px){.two{grid-template-columns:1fr}.four{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h2>사업 통합 관리</h2>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+  <h2>사업 통합 관리</h2>
+  <span class="save-notice" id="saveNotice"></span>
+</div>
 <p class="date-str" id="todayStr"></p>
 
 <div class="top-tabs">
@@ -118,13 +119,16 @@ h2{font-size:18px;font-weight:500;margin-bottom:2px}
 </div>
 
 <div class="panel" id="p-projects">
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-    <input type="text" id="projNameInp" placeholder="사업명 입력..." style="font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;flex:1;min-width:140px;outline:none">
-    <input type="text" id="projBudInp" placeholder="예산 (예: 100M)" style="font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;width:130px;outline:none">
-    <select id="projStInp" style="font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;outline:none">
-      <option>진행중</option><option>검토중</option><option>완료</option><option>보류</option>
-    </select>
-    <button class="add-btn" onclick="addProj()"><i class="ti ti-plus"></i> 추가</button>
+  <div class="card">
+    <div class="sec-label">새 사업 추가</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="text" id="projNameInp" placeholder="사업명 입력..." style="font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;flex:1;min-width:140px;outline:none" onkeydown="if(event.key==='Enter')addProj()">
+      <input type="text" id="projBudInp" placeholder="예산 (예: 100M)" style="font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;width:130px;outline:none">
+      <select id="projStInp" style="font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;outline:none">
+        <option>진행중</option><option>검토중</option><option>완료</option><option>보류</option>
+      </select>
+      <button class="add-btn" onclick="addProj()"><i class="ti ti-plus"></i> 추가</button>
+    </div>
   </div>
   <div id="proj-list"></div>
 </div>
@@ -133,7 +137,7 @@ h2{font-size:18px;font-weight:500;margin-bottom:2px}
   <div class="proj-filter" id="spendFilter"></div>
   <div class="card" style="padding:.75rem 1rem">
     <div class="add-row">
-      <input type="text" id="spItemInp" placeholder="지출 항목명...">
+      <input type="text" id="spItemInp" placeholder="지출 항목명..." onkeydown="if(event.key==='Enter')addSpend()">
       <input type="text" id="spAmtInp" placeholder="금액(천원)" style="max-width:100px">
       <select id="spProjInp" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;max-width:140px;outline:none"></select>
       <select id="spStInp" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;max-width:90px;outline:none">
@@ -149,7 +153,7 @@ h2{font-size:18px;font-weight:500;margin-bottom:2px}
   <div class="proj-filter" id="docsFilter"></div>
   <div class="card" style="padding:.75rem 1rem">
     <div class="add-row">
-      <input type="text" id="docNameInp" placeholder="서류명...">
+      <input type="text" id="docNameInp" placeholder="서류명..." onkeydown="if(event.key==='Enter')addDoc()">
       <select id="docProjInp" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;max-width:150px;outline:none"></select>
       <input type="text" id="docDeadInp" placeholder="기한 (6/20)" style="max-width:80px">
       <button class="add-btn" onclick="addDoc()"><i class="ti ti-plus"></i></button>
@@ -178,14 +182,10 @@ h2{font-size:18px;font-weight:500;margin-bottom:2px}
     <div>
       <div class="card">
         <div class="sec-label">주요 일정</div>
-        <div id="sched-list">
-          <div class="row"><span class="row-date">6/10</span><div class="row-main">은성다방 커피 체험<div class="row-sub">개항희망문화상권</div></div><span class="status-badge s-active">진행중</span></div>
-          <div class="row"><span class="row-date">6/15</span><div class="row-main">동화마을 리뉴얼 회의<div class="row-sub">동화마을</div></div><span class="status-badge s-review">검토중</span></div>
-          <div class="row"><span class="row-date">6/25</span><div class="row-main">월간 보고<div class="row-sub">전체</div></div><span class="status-badge s-urgent">긴급</span></div>
-        </div>
+        <div id="sched-list"></div>
         <div class="add-row" style="margin-top:10px">
           <input type="text" id="schedDateInp" placeholder="날짜(6/20)" style="max-width:80px">
-          <input type="text" id="schedNameInp" placeholder="일정명...">
+          <input type="text" id="schedNameInp" placeholder="일정명..." onkeydown="if(event.key==='Enter')addSched()">
           <button class="add-btn" onclick="addSched()"><i class="ti ti-plus"></i></button>
         </div>
       </div>
@@ -221,7 +221,11 @@ const DK=['일','월','화','수','목','금','토'];
 const now=new Date();
 let vm=now.getMonth(),vy=now.getFullYear();
 
-const PROJECTS=[
+function load(key,def){try{const v=localStorage.getItem(key);return v?JSON.parse(v):def}catch(e){return def}}
+function save(key,val){try{localStorage.setItem(key,JSON.stringify(val));showSaved()}catch(e){}}
+function showSaved(){const el=document.getElementById('saveNotice');el.textContent='저장됨 ✓';setTimeout(()=>el.textContent='',2000)}
+
+let PROJECTS=load('projects',[
   {id:1,name:'개항희망문화상권',budget:'100M',status:'진행중',progress:65},
   {id:2,name:'동화마을 리뉴얼',budget:'100M',status:'진행중',progress:40},
   {id:3,name:'은성다방 체험',budget:'20M',status:'진행중',progress:80},
@@ -229,25 +233,26 @@ const PROJECTS=[
   {id:5,name:'중구 문화재단',budget:'200M',status:'진행중',progress:55},
   {id:6,name:'지역상권 활성화',budget:'80M',status:'보류',progress:10},
   {id:7,name:'콘텐츠 기획',budget:'30M',status:'완료',progress:100},
-];
-let nextPid=8;
-const SPENDS=[
+]);
+let SPENDS=load('spends',[
   {id:1,item:'HPL 패널 구매',amt:'8,500',proj:'동화마을 리뉴얼',status:'검토중'},
   {id:2,item:'FRP 조형물 제작',amt:'12,000',proj:'동화마을 리뉴얼',status:'결재중'},
   {id:3,item:'커피 체험 재료비',amt:'1,200',proj:'은성다방 체험',status:'완료'},
   {id:4,item:'프로그램 강사비',amt:'3,000',proj:'개항희망문화상권',status:'예정'},
-];
-let nextSid=5;
-const DOCS=[
+]);
+let DOCS=load('docs',[
   {id:1,name:'사업비 지출결의서',proj:'동화마을 리뉴얼',deadline:'6/15',done:false},
   {id:2,name:'설계 변경 승인서',proj:'동화마을 리뉴얼',deadline:'6/20',done:false},
   {id:3,name:'만족도 조사 결과',proj:'은성다방 체험',deadline:'6/30',done:true},
   {id:4,name:'월간 운영 보고서',proj:'개항희망문화상권',deadline:'6/25',done:false},
   {id:5,name:'예산 집행 계획서',proj:'중구 문화재단',deadline:'7/01',done:false},
-];
-let nextDid=6;
-const TODOS=[],SCHEDS=[],MEMOS=[];
-let nextTid=1,nextScid=1,nextMid=1;
+]);
+let TODOS=load('todos',[]);
+let SCHEDS=load('scheds',[]);
+let MEMOS=load('memos',[]);
+
+let nextPid=load('npid',8),nextSid=load('nsid',5),nextDid=load('ndid',6);
+let nextTid=load('ntid',1),nextScid=load('nscid',1),nextMid=load('nmid',1);
 
 function sw(id,btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
@@ -256,14 +261,8 @@ function sw(id,btn){
   btn.classList.add('on');
 }
 function projNames(){return PROJECTS.map(p=>p.name)}
-function statusClass(s){
-  if(s==='진행중')return 's-active';
-  if(s==='검토중')return 's-review';
-  if(s==='완료')return 's-done';
-  if(s==='보류')return 's-hold';
-  if(s==='긴급')return 's-urgent';
-  return 's-hold';
-}
+function statusClass(s){return 's-'+s}
+
 function renderOverview(){
   document.getElementById('ov-total').textContent=PROJECTS.length;
   document.getElementById('ov-active').textContent=PROJECTS.filter(p=>p.status==='진행중').length;
@@ -276,22 +275,51 @@ function renderOverview(){
     g.appendChild(d);
   });
 }
+
 function renderProjects(){
   const el=document.getElementById('proj-list');el.innerHTML='';
   PROJECTS.forEach(p=>{
-    const d=document.createElement('div');d.className='card';d.style.padding='.875rem 1rem';d.style.marginBottom='8px';
-    d.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="proj-name" style="flex:1">${p.name}</span><span class="status-badge ${statusClass(p.status)}">${p.status}</span><span style="font-size:12px;color:#888">${p.budget}</span><button class="del-btn" onclick="delProj(${p.id})"><i class="ti ti-trash"></i></button></div><div class="bar-wrap"><div class="bar-fill" style="width:${p.progress}%"></div></div><div class="pct-row"><span class="pct-num">${p.progress}% 완료</span><input type="range" min="0" max="100" step="1" value="${p.progress}" style="width:100px;accent-color:#1a1a18" oninput="updProg(${p.id},this.value,this.nextElementSibling)"><span style="font-size:11px;color:#aaa;min-width:28px">${p.progress}%</span></div>`;
+    const d=document.createElement('div');d.className='card';d.style.cssText='padding:.875rem 1rem;margin-bottom:8px';
+    d.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span class="proj-name" style="flex:1">${p.name}</span>
+      <select onchange="updStatus(${p.id},this.value)" style="font-size:11px;padding:2px 6px;border:1px solid #ddd;border-radius:6px;background:#f8f7f4;outline:none">
+        ${['진행중','검토중','완료','보류'].map(s=>`<option${s===p.status?' selected':''}>${s}</option>`).join('')}
+      </select>
+      <span style="font-size:12px;color:#888">${p.budget}</span>
+      <button class="del-btn" onclick="delProj(${p.id})"><i class="ti ti-trash"></i></button>
+    </div>
+    <div class="bar-wrap"><div class="bar-fill" style="width:${p.progress}%"></div></div>
+    <div class="pct-row">
+      <span class="pct-num">${p.progress}% 완료</span>
+      <input type="range" min="0" max="100" step="1" value="${p.progress}" style="width:100px;accent-color:#1a1a18" oninput="updProg(${p.id},this.value,this.nextElementSibling)">
+      <span style="font-size:11px;color:#aaa;min-width:28px">${p.progress}%</span>
+    </div>`;
     el.appendChild(d);
   });
 }
-function updProg(id,v,lbl){const p=PROJECTS.find(x=>x.id===id);if(p){p.progress=parseInt(v);lbl.textContent=v+'%';}renderOverview()}
-function delProj(id){PROJECTS.splice(PROJECTS.findIndex(p=>p.id===id),1);renderAll()}
+function updProg(id,v,lbl){
+  const p=PROJECTS.find(x=>x.id===id);
+  if(p){p.progress=parseInt(v);lbl.textContent=v+'%';save('projects',PROJECTS);}
+  renderOverview();
+}
+function updStatus(id,v){
+  const p=PROJECTS.find(x=>x.id===id);
+  if(p){p.status=v;save('projects',PROJECTS);}
+  renderOverview();
+}
+function delProj(id){
+  if(!confirm('삭제할까요?'))return;
+  PROJECTS.splice(PROJECTS.findIndex(p=>p.id===id),1);
+  save('projects',PROJECTS);renderAll();
+}
 function addProj(){
   const n=document.getElementById('projNameInp').value.trim();if(!n)return;
   PROJECTS.push({id:nextPid++,name:n,budget:document.getElementById('projBudInp').value||'미정',status:document.getElementById('projStInp').value,progress:0});
+  save('projects',PROJECTS);save('npid',nextPid);
   document.getElementById('projNameInp').value='';document.getElementById('projBudInp').value='';
   renderAll();
 }
+
 function renderProjFilter(elId,cur,setCb){
   const el=document.getElementById(elId);el.innerHTML='';
   ['전체',...projNames()].forEach(n=>{
@@ -299,9 +327,10 @@ function renderProjFilter(elId,cur,setCb){
     b.textContent=n;b.onclick=()=>{setCb(n);renderAll()};el.appendChild(b);
   });
 }
-let spendFilter='전체';
+
+let spendFilter=load('spendFilter','전체');
 function renderSpend(){
-  renderProjFilter('spendFilter',spendFilter,v=>spendFilter=v);
+  renderProjFilter('spendFilter',spendFilter,v=>{spendFilter=v;save('spendFilter',v)});
   const sel=document.getElementById('spProjInp');sel.innerHTML='';
   projNames().forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o)});
   const el=document.getElementById('spend-list');el.innerHTML='';
@@ -310,21 +339,29 @@ function renderSpend(){
   const card=document.createElement('div');card.className='card';card.style.padding='.75rem 1rem';
   items.forEach(s=>{
     const r=document.createElement('div');r.className='row';
-    r.innerHTML=`<div class="row-main">${s.item}<div class="row-sub">${s.proj}</div></div><span class="amount">${s.amt}천원</span><span class="exp-tag e-${s.status}">${s.status}</span><button class="del-btn" onclick="delSpend(${s.id})"><i class="ti ti-x"></i></button>`;
+    r.innerHTML=`<div class="row-main">${s.item}<div class="row-sub">${s.proj}</div></div>
+    <span class="amount">${s.amt}천원</span>
+    <select onchange="updSpendStatus(${s.id},this.value)" style="font-size:11px;padding:2px 6px;border:1px solid #ddd;border-radius:6px;background:#f8f7f4;outline:none">
+      ${['예정','검토중','결재중','완료'].map(st=>`<option${st===s.status?' selected':''}>${st}</option>`).join('')}
+    </select>
+    <button class="del-btn" onclick="delSpend(${s.id})"><i class="ti ti-x"></i></button>`;
     card.appendChild(r);
   });
   el.appendChild(card);
 }
+function updSpendStatus(id,v){const s=SPENDS.find(x=>x.id===id);if(s){s.status=v;save('spends',SPENDS);}renderOverview();}
 function addSpend(){
   const item=document.getElementById('spItemInp').value.trim();if(!item)return;
   SPENDS.push({id:nextSid++,item,amt:document.getElementById('spAmtInp').value||'0',proj:document.getElementById('spProjInp').value,status:document.getElementById('spStInp').value});
+  save('spends',SPENDS);save('nsid',nextSid);
   document.getElementById('spItemInp').value='';document.getElementById('spAmtInp').value='';
   renderAll();
 }
-function delSpend(id){SPENDS.splice(SPENDS.findIndex(s=>s.id===id),1);renderAll()}
-let docsFilter='전체';
+function delSpend(id){SPENDS.splice(SPENDS.findIndex(s=>s.id===id),1);save('spends',SPENDS);renderAll()}
+
+let docsFilter=load('docsFilter','전체');
 function renderDocs(){
-  renderProjFilter('docsFilter',docsFilter,v=>docsFilter=v);
+  renderProjFilter('docsFilter',docsFilter,v=>{docsFilter=v;save('docsFilter',v)});
   const sel=document.getElementById('docProjInp');sel.innerHTML='';
   projNames().forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o)});
   const el=document.getElementById('docs-list');el.innerHTML='';
@@ -335,7 +372,7 @@ function renderDocs(){
     const r=document.createElement('div');r.className='row';
     const cid='dc'+d.id;
     r.innerHTML=`<input type="checkbox" class="chk" id="${cid}" ${d.done?'checked':''}><label class="chk-lbl" for="${cid}">${d.name}<span style="font-size:11px;color:#888;margin-left:6px">${d.proj}</span></label><span class="row-date">${d.deadline}</span><button class="del-btn" onclick="delDoc(${d.id})"><i class="ti ti-x"></i></button>`;
-    r.querySelector('.chk').onchange=e=>{d.done=e.target.checked;renderOverview()};
+    r.querySelector('.chk').onchange=e=>{d.done=e.target.checked;save('docs',DOCS);renderOverview()};
     card.appendChild(r);
   });
   el.appendChild(card);
@@ -343,10 +380,12 @@ function renderDocs(){
 function addDoc(){
   const n=document.getElementById('docNameInp').value.trim();if(!n)return;
   DOCS.push({id:nextDid++,name:n,proj:document.getElementById('docProjInp').value,deadline:document.getElementById('docDeadInp').value||'미정',done:false});
+  save('docs',DOCS);save('ndid',nextDid);
   document.getElementById('docNameInp').value='';document.getElementById('docDeadInp').value='';
   renderAll();
 }
-function delDoc(id){DOCS.splice(DOCS.findIndex(d=>d.id===id),1);renderAll()}
+function delDoc(id){DOCS.splice(DOCS.findIndex(d=>d.id===id),1);save('docs',DOCS);renderAll()}
+
 function renderSchedule(){
   document.getElementById('mLabel').textContent=`${vy}년 ${vm+1}월`;
   const g=document.getElementById('mGrid');g.innerHTML='';
@@ -360,12 +399,14 @@ function renderSchedule(){
     const td=new Date(vy,vm,i-sd+1);
     if(!other&&td.toDateString()===now.toDateString())cell.classList.add('today');
     cell.innerHTML=`<div class="dn">${num}</div>`;
-    if(!other&&(num===10||num===15||num===25)){
-      const e=document.createElement('div');
-      e.className='edot'+(num===15?' g':num===25?' a':'');
-      e.innerHTML=`<span>${num===10?'커피체험':num===15?'동화':num===25?'보고':''}</span>`;
-      cell.appendChild(e);
-    }
+    const dayScheds=SCHEDS.filter(s=>{
+      const parts=s.date.split('/');
+      return parts.length===2&&parseInt(parts[0])===(vm+1)&&parseInt(parts[1])===num&&!other;
+    });
+    dayScheds.forEach(s=>{
+      const e=document.createElement('div');e.className='edot';
+      e.innerHTML=`<span>${s.name.substring(0,4)}</span>`;cell.appendChild(e);
+    });
     g.appendChild(cell);
   }
   const wg=document.getElementById('wGrid');wg.innerHTML='';
@@ -377,19 +418,20 @@ function renderSchedule(){
     div.innerHTML=`<div class="wd-name">${DK[d.getDay()]}</div><div class="wd-num${isT?' today':''}">${d.getDate()}</div>`;
     wg.appendChild(div);
   }
-  const sl=document.getElementById('sched-list');
-  sl.querySelectorAll('[data-dyn]').forEach(e=>e.remove());
+  const sl=document.getElementById('sched-list');sl.innerHTML='';
+  if(!SCHEDS.length){sl.innerHTML='<div style="font-size:13px;color:#aaa;padding:8px 0">등록된 일정이 없습니다.</div>'}
   SCHEDS.forEach(s=>{
-    const r=document.createElement('div');r.className='row';r.dataset.dyn='1';
+    const r=document.createElement('div');r.className='row';
     r.innerHTML=`<span class="row-date">${s.date}</span><div class="row-main">${s.name}</div><button class="del-btn" onclick="delSched(${s.id})"><i class="ti ti-x"></i></button>`;
     sl.appendChild(r);
   });
   const tl=document.getElementById('sched-todo');tl.innerHTML='';
+  if(!TODOS.length){tl.innerHTML='<div style="font-size:13px;color:#aaa;padding:8px 0">오늘 할 일을 추가해보세요.</div>'}
   TODOS.forEach(t=>{
     const r=document.createElement('div');r.className='row';
     const cid='st'+t.id;
     r.innerHTML=`<input type="checkbox" class="chk" id="${cid}" ${t.done?'checked':''}><label class="chk-lbl" for="${cid}">${t.text}</label><button class="del-btn" onclick="delTodo(${t.id})"><i class="ti ti-x"></i></button>`;
-    r.querySelector('.chk').onchange=e=>{t.done=e.target.checked};
+    r.querySelector('.chk').onchange=e=>{t.done=e.target.checked;save('todos',TODOS)};
     tl.appendChild(r);
   });
 }
@@ -397,18 +439,21 @@ function chgMonth(d){vm+=d;if(vm>11){vm=0;vy++}if(vm<0){vm=11;vy--}renderSchedul
 function addSched(){
   const n=document.getElementById('schedNameInp').value.trim();if(!n)return;
   SCHEDS.push({id:nextScid++,date:document.getElementById('schedDateInp').value||'미정',name:n});
+  save('scheds',SCHEDS);save('nscid',nextScid);
   document.getElementById('schedNameInp').value='';document.getElementById('schedDateInp').value='';
   renderSchedule();
 }
-function delSched(id){SCHEDS.splice(SCHEDS.findIndex(s=>s.id===id),1);renderSchedule()}
+function delSched(id){SCHEDS.splice(SCHEDS.findIndex(s=>s.id===id),1);save('scheds',SCHEDS);renderSchedule()}
 function addSTodo(){
   const inp=document.getElementById('stodoInp');if(!inp.value.trim())return;
-  TODOS.push({id:nextTid++,text:inp.value.trim(),done:false});inp.value='';renderSchedule();
+  TODOS.push({id:nextTid++,text:inp.value.trim(),done:false});
+  save('todos',TODOS);save('ntid',nextTid);inp.value='';renderSchedule();
 }
-function delTodo(id){TODOS.splice(TODOS.findIndex(t=>t.id===id),1);renderSchedule()}
-let memoFilter='전체';
+function delTodo(id){TODOS.splice(TODOS.findIndex(t=>t.id===id),1);save('todos',TODOS);renderSchedule()}
+
+let memoFilter=load('memoFilter','전체');
 function renderMemo(){
-  renderProjFilter('memoFilter',memoFilter,v=>memoFilter=v);
+  renderProjFilter('memoFilter',memoFilter,v=>{memoFilter=v;save('memoFilter',v)});
   const sel=document.getElementById('memoProjSel');sel.innerHTML='<option value="전체">전체</option>';
   projNames().forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o)});
   const el=document.getElementById('memo-list');el.innerHTML='';
@@ -425,9 +470,11 @@ function addMemo(){
   const t=new Date();
   const ts=`${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
   MEMOS.push({id:nextMid++,text:txt,proj:document.getElementById('memoProjSel').value,time:ts});
+  save('memos',MEMOS);save('nmid',nextMid);
   document.getElementById('memoInp').value='';renderMemo();
 }
-function delMemo(id){MEMOS.splice(MEMOS.findIndex(m=>m.id===id),1);renderMemo()}
+function delMemo(id){MEMOS.splice(MEMOS.findIndex(m=>m.id===id),1);save('memos',MEMOS);renderMemo()}
+
 function renderAll(){renderOverview();renderProjects();renderSpend();renderDocs();renderSchedule();renderMemo()}
 
 const dl=['일','월','화','수','목','금','토'];
