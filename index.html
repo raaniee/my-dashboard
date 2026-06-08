@@ -308,7 +308,7 @@ function updStatus(id,v){
   renderOverview();
 }
 function delProj(id){
-  if(!confirm('삭제할까요?'))return;
+
   PROJECTS.splice(PROJECTS.findIndex(p=>p.id===id),1);
   save('projects',PROJECTS);renderAll();
 }
