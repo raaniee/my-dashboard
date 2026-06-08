@@ -24,7 +24,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .proj-name{font-size:13px;font-weight:500;color:#1a1a18;margin-bottom:4px}
 .proj-sub{font-size:11px;color:#888;margin-bottom:8px}
 .bar-wrap{height:4px;background:#f0ede8;border-radius:2px;overflow:hidden}
-.bar-fill{height:100%;border-radius:2px;background:#1a1a18}
+.bar-fill{height:100%;border-radius:2px}
 .pct-row{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
 .pct-num{font-size:11px;color:#aaa}
 .status-badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px}
@@ -42,7 +42,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chk-lbl{font-size:13px;cursor:pointer;color:#1a1a18;flex:1}
 .chk:checked+.chk-lbl{text-decoration:line-through;color:#bbb}
 .add-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.add-row input,.add-row select{font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;color:#1a1a18;outline:none}
+.add-row input,.add-row select,input.ifield,select.ifield{font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;color:#1a1a18;outline:none}
 .add-row input:focus,.add-row select:focus{border-color:#888}
 .add-row input{flex:1;min-width:100px}
 .add-btn{padding:6px 14px;font-size:12px;border:1px solid #ddd;border-radius:8px;background:transparent;cursor:pointer;color:#666;white-space:nowrap}
@@ -63,7 +63,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .mcell.other .dn{color:#ccc}
 .dn{font-size:11px;font-weight:500;color:#1a1a18}
 .edot{font-size:9px;color:#888;display:flex;align-items:center;gap:2px;margin-top:1px;overflow:hidden}
-.edot::before{content:'';flex-shrink:0;width:4px;height:4px;border-radius:50%;background:#378ADD}
+.edot::before{content:'';flex-shrink:0;width:5px;height:5px;border-radius:50%}
 .nav-r{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .nav-r h3{font-size:14px;font-weight:500;color:#1a1a18}
 .nbtn{background:none;border:1px solid #ddd;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;color:#666}
@@ -74,16 +74,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .e-완료{background:#EAF3DE;color:#27500A}
 .e-예정{background:#F1EFE8;color:#444441}
 .note-card{background:#f8f7f4;border-radius:8px;padding:.75rem 1rem;margin-bottom:8px;position:relative}
-.note-del{position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;font-size:16px;color:#bbb;line-height:1}
-.note-del:hover{color:#1a1a18}
+.note-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px}
+.note-act-btn{background:none;border:none;cursor:pointer;font-size:15px;color:#bbb;line-height:1;padding:0 2px}
+.note-act-btn:hover{color:#1a1a18}
 .note-time{font-size:10px;color:#aaa;margin-bottom:4px}
 .note-text{font-size:13px;color:#1a1a18;line-height:1.5}
+.note-edit-area{width:100%;min-height:60px;padding:6px 8px;font-size:13px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#1a1a18;resize:vertical;font-family:inherit;line-height:1.5;outline:none;margin-top:4px}
 .proj-filter{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
-.pf-btn{font-size:11px;padding:3px 10px;border-radius:12px;border:1px solid #e5e3dc;background:transparent;cursor:pointer;color:#888}
-.pf-btn.on{background:#f0ede8;color:#1a1a18;border-color:#ccc}
+.pf-btn{font-size:11px;padding:3px 10px;border-radius:12px;border:1px solid #e5e3dc;background:transparent;cursor:pointer;color:#888;transition:all .1s}
 .del-btn{background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;padding:0 2px}
 .del-btn:hover{color:#1a1a18}
 .amount{font-size:12px;color:#888;white-space:nowrap}
+.proj-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
 h2{font-size:18px;font-weight:500;margin-bottom:2px}
 .date-str{font-size:12px;color:#aaa;margin-bottom:1.25rem}
 .save-notice{font-size:11px;color:#aaa;margin-left:8px}
@@ -185,6 +187,7 @@ h2{font-size:18px;font-weight:500;margin-bottom:2px}
         <div id="sched-list"></div>
         <div class="add-row" style="margin-top:10px">
           <input type="text" id="schedDateInp" placeholder="날짜(6/20)" style="max-width:80px">
+          <select id="schedProjInp" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;max-width:130px;outline:none"></select>
           <input type="text" id="schedNameInp" placeholder="일정명..." onkeydown="if(event.key==='Enter')addSched()">
           <button class="add-btn" onclick="addSched()"><i class="ti ti-plus"></i></button>
         </div>
@@ -221,6 +224,20 @@ const DK=['일','월','화','수','목','금','토'];
 const now=new Date();
 let vm=now.getMonth(),vy=now.getFullYear();
 
+const COLORS=['#378ADD','#1D9E75','#D85A30','#D4537E','#7F77DD','#BA7517','#639922','#993C1D','#534AB7','#0F6E56'];
+function projColor(name){
+  const idx=PROJECTS.findIndex(p=>p.name===name);
+  return COLORS[idx%COLORS.length]||'#888';
+}
+function projColorById(id){
+  const idx=PROJECTS.findIndex(p=>p.id===id);
+  return COLORS[idx%COLORS.length]||'#888';
+}
+function hexToRgba(hex,a){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
 function load(key,def){try{const v=localStorage.getItem(key);return v?JSON.parse(v):def}catch(e){return def}}
 function save(key,val){try{localStorage.setItem(key,JSON.stringify(val));showSaved()}catch(e){}}
 function showSaved(){const el=document.getElementById('saveNotice');el.textContent='저장됨 ✓';setTimeout(()=>el.textContent='',2000)}
@@ -250,7 +267,6 @@ let DOCS=load('docs',[
 let TODOS=load('todos',[]);
 let SCHEDS=load('scheds',[]);
 let MEMOS=load('memos',[]);
-
 let nextPid=load('npid',8),nextSid=load('nsid',5),nextDid=load('ndid',6);
 let nextTid=load('ntid',1),nextScid=load('nscid',1),nextMid=load('nmid',1);
 
@@ -269,17 +285,20 @@ function renderOverview(){
   document.getElementById('ov-spend').textContent=SPENDS.filter(s=>s.status!=='완료').length;
   document.getElementById('ov-docs').textContent=DOCS.filter(d=>!d.done).length;
   const g=document.getElementById('ov-proj-grid');g.innerHTML='';
-  PROJECTS.forEach(p=>{
+  PROJECTS.forEach((p,i)=>{
+    const c=COLORS[i%COLORS.length];
     const d=document.createElement('div');d.className='proj-card';
-    d.innerHTML=`<div class="proj-name">${p.name}</div><div class="proj-sub">${p.budget} · <span class="status-badge ${statusClass(p.status)}">${p.status}</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${p.progress}%"></div></div><div class="pct-row"><span class="pct-num">${p.progress}%</span></div>`;
+    d.style.borderTop=`3px solid ${c}`;
+    d.innerHTML=`<div class="proj-name">${p.name}</div><div class="proj-sub">${p.budget} · <span class="status-badge ${statusClass(p.status)}">${p.status}</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${p.progress}%;background:${c}"></div></div><div class="pct-row"><span class="pct-num">${p.progress}%</span></div>`;
     g.appendChild(d);
   });
 }
 
 function renderProjects(){
   const el=document.getElementById('proj-list');el.innerHTML='';
-  PROJECTS.forEach(p=>{
-    const d=document.createElement('div');d.className='card';d.style.cssText='padding:.875rem 1rem;margin-bottom:8px';
+  PROJECTS.forEach((p,i)=>{
+    const c=COLORS[i%COLORS.length];
+    const d=document.createElement('div');d.className='card';d.style.cssText=`padding:.875rem 1rem;margin-bottom:8px;border-left:4px solid ${c};border-radius:0 12px 12px 0`;
     d.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
       <span class="proj-name" style="flex:1">${p.name}</span>
       <select onchange="updStatus(${p.id},this.value)" style="font-size:11px;padding:2px 6px;border:1px solid #ddd;border-radius:6px;background:#f8f7f4;outline:none">
@@ -288,10 +307,10 @@ function renderProjects(){
       <span style="font-size:12px;color:#888">${p.budget}</span>
       <button class="del-btn" onclick="delProj(${p.id})"><i class="ti ti-trash"></i></button>
     </div>
-    <div class="bar-wrap"><div class="bar-fill" style="width:${p.progress}%"></div></div>
+    <div class="bar-wrap"><div class="bar-fill" style="width:${p.progress}%;background:${c}"></div></div>
     <div class="pct-row">
       <span class="pct-num">${p.progress}% 완료</span>
-      <input type="range" min="0" max="100" step="1" value="${p.progress}" style="width:100px;accent-color:#1a1a18" oninput="updProg(${p.id},this.value,this.nextElementSibling)">
+      <input type="range" min="0" max="100" step="1" value="${p.progress}" style="width:100px;accent-color:${c}" oninput="updProg(${p.id},this.value,this.nextElementSibling)">
       <span style="font-size:11px;color:#aaa;min-width:28px">${p.progress}%</span>
     </div>`;
     el.appendChild(d);
@@ -308,7 +327,6 @@ function updStatus(id,v){
   renderOverview();
 }
 function delProj(id){
-
   PROJECTS.splice(PROJECTS.findIndex(p=>p.id===id),1);
   save('projects',PROJECTS);renderAll();
 }
@@ -322,9 +340,20 @@ function addProj(){
 
 function renderProjFilter(elId,cur,setCb){
   const el=document.getElementById(elId);el.innerHTML='';
-  ['전체',...projNames()].forEach(n=>{
+  ['전체',...projNames()].forEach((n,i)=>{
     const b=document.createElement('button');b.className='pf-btn'+(n===cur?' on':'');
-    b.textContent=n;b.onclick=()=>{setCb(n);renderAll()};el.appendChild(b);
+    if(n!=='전체'){
+      const c=COLORS[(i-1)%COLORS.length];
+      b.style.borderColor=n===cur?c:'#e5e3dc';
+      b.style.color=n===cur?c:'#888';
+      b.style.background=n===cur?hexToRgba(c,0.08):'transparent';
+      b.innerHTML=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-right:4px;vertical-align:middle"></span>${n}`;
+    } else {
+      b.textContent=n;
+      if(n===cur){b.style.background='#f0ede8';b.style.color='#1a1a18';b.style.borderColor='#ccc';}
+    }
+    b.onclick=()=>{setCb(n);renderAll()};
+    el.appendChild(b);
   });
 }
 
@@ -332,14 +361,16 @@ let spendFilter=load('spendFilter','전체');
 function renderSpend(){
   renderProjFilter('spendFilter',spendFilter,v=>{spendFilter=v;save('spendFilter',v)});
   const sel=document.getElementById('spProjInp');sel.innerHTML='';
-  projNames().forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o)});
+  projNames().forEach((n,i)=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o)});
   const el=document.getElementById('spend-list');el.innerHTML='';
   const items=spendFilter==='전체'?SPENDS:SPENDS.filter(s=>s.proj===spendFilter);
   if(!items.length){el.innerHTML='<div style="padding:1rem;font-size:13px;color:#aaa">등록된 지출 항목이 없습니다.</div>';return}
   const card=document.createElement('div');card.className='card';card.style.padding='.75rem 1rem';
   items.forEach(s=>{
+    const c=projColor(s.proj);
     const r=document.createElement('div');r.className='row';
-    r.innerHTML=`<div class="row-main">${s.item}<div class="row-sub">${s.proj}</div></div>
+    r.innerHTML=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0"></span>
+    <div class="row-main">${s.item}<div class="row-sub">${s.proj}</div></div>
     <span class="amount">${s.amt}천원</span>
     <select onchange="updSpendStatus(${s.id},this.value)" style="font-size:11px;padding:2px 6px;border:1px solid #ddd;border-radius:6px;background:#f8f7f4;outline:none">
       ${['예정','검토중','결재중','완료'].map(st=>`<option${st===s.status?' selected':''}>${st}</option>`).join('')}
@@ -369,9 +400,10 @@ function renderDocs(){
   if(!items.length){el.innerHTML='<div style="padding:1rem;font-size:13px;color:#aaa">등록된 서류가 없습니다.</div>';return}
   const card=document.createElement('div');card.className='card';card.style.padding='.75rem 1rem';
   items.forEach(d=>{
+    const c=projColor(d.proj);
     const r=document.createElement('div');r.className='row';
     const cid='dc'+d.id;
-    r.innerHTML=`<input type="checkbox" class="chk" id="${cid}" ${d.done?'checked':''}><label class="chk-lbl" for="${cid}">${d.name}<span style="font-size:11px;color:#888;margin-left:6px">${d.proj}</span></label><span class="row-date">${d.deadline}</span><button class="del-btn" onclick="delDoc(${d.id})"><i class="ti ti-x"></i></button>`;
+    r.innerHTML=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0"></span><input type="checkbox" class="chk" id="${cid}" ${d.done?'checked':''}><label class="chk-lbl" for="${cid}">${d.name}<span style="font-size:11px;color:#888;margin-left:6px">${d.proj}</span></label><span class="row-date">${d.deadline}</span><button class="del-btn" onclick="delDoc(${d.id})"><i class="ti ti-x"></i></button>`;
     r.querySelector('.chk').onchange=e=>{d.done=e.target.checked;save('docs',DOCS);renderOverview()};
     card.appendChild(r);
   });
@@ -387,6 +419,8 @@ function addDoc(){
 function delDoc(id){DOCS.splice(DOCS.findIndex(d=>d.id===id),1);save('docs',DOCS);renderAll()}
 
 function renderSchedule(){
+  const schedProjSel=document.getElementById('schedProjInp');
+  if(schedProjSel){schedProjSel.innerHTML='<option value="">사업 선택</option>';projNames().forEach(n=>{const o=document.createElement('option');o.textContent=n;schedProjSel.appendChild(o)})}
   document.getElementById('mLabel').textContent=`${vy}년 ${vm+1}월`;
   const g=document.getElementById('mGrid');g.innerHTML='';
   const first=new Date(vy,vm,1),sd=first.getDay(),dim=new Date(vy,vm+1,0).getDate(),prev=new Date(vy,vm,0).getDate();
@@ -399,14 +433,19 @@ function renderSchedule(){
     const td=new Date(vy,vm,i-sd+1);
     if(!other&&td.toDateString()===now.toDateString())cell.classList.add('today');
     cell.innerHTML=`<div class="dn">${num}</div>`;
-    const dayScheds=SCHEDS.filter(s=>{
-      const parts=s.date.split('/');
-      return parts.length===2&&parseInt(parts[0])===(vm+1)&&parseInt(parts[1])===num&&!other;
-    });
-    dayScheds.forEach(s=>{
-      const e=document.createElement('div');e.className='edot';
-      e.innerHTML=`<span>${s.name.substring(0,4)}</span>`;cell.appendChild(e);
-    });
+    if(!other){
+      const dayScheds=SCHEDS.filter(s=>{
+        const parts=s.date.split('/');
+        return parts.length===2&&parseInt(parts[0])===(vm+1)&&parseInt(parts[1])===num;
+      });
+      dayScheds.forEach(s=>{
+        const c=s.proj?projColor(s.proj):'#888';
+        const e=document.createElement('div');e.className='edot';
+        e.style.setProperty('--dc',c);
+        e.innerHTML=`<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${c};flex-shrink:0;margin-right:2px"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name.substring(0,4)}</span>`;
+        cell.appendChild(e);
+      });
+    }
     g.appendChild(cell);
   }
   const wg=document.getElementById('wGrid');wg.innerHTML='';
@@ -421,8 +460,9 @@ function renderSchedule(){
   const sl=document.getElementById('sched-list');sl.innerHTML='';
   if(!SCHEDS.length){sl.innerHTML='<div style="font-size:13px;color:#aaa;padding:8px 0">등록된 일정이 없습니다.</div>'}
   SCHEDS.forEach(s=>{
+    const c=s.proj?projColor(s.proj):'#888';
     const r=document.createElement('div');r.className='row';
-    r.innerHTML=`<span class="row-date">${s.date}</span><div class="row-main">${s.name}</div><button class="del-btn" onclick="delSched(${s.id})"><i class="ti ti-x"></i></button>`;
+    r.innerHTML=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0"></span><span class="row-date">${s.date}</span><div class="row-main">${s.name}${s.proj?`<div class="row-sub">${s.proj}</div>`:''}</div><button class="del-btn" onclick="delSched(${s.id})"><i class="ti ti-x"></i></button>`;
     sl.appendChild(r);
   });
   const tl=document.getElementById('sched-todo');tl.innerHTML='';
@@ -438,7 +478,8 @@ function renderSchedule(){
 function chgMonth(d){vm+=d;if(vm>11){vm=0;vy++}if(vm<0){vm=11;vy--}renderSchedule()}
 function addSched(){
   const n=document.getElementById('schedNameInp').value.trim();if(!n)return;
-  SCHEDS.push({id:nextScid++,date:document.getElementById('schedDateInp').value||'미정',name:n});
+  const proj=document.getElementById('schedProjInp').value||'';
+  SCHEDS.push({id:nextScid++,date:document.getElementById('schedDateInp').value||'미정',name:n,proj});
   save('scheds',SCHEDS);save('nscid',nextScid);
   document.getElementById('schedNameInp').value='';document.getElementById('schedDateInp').value='';
   renderSchedule();
@@ -460,10 +501,29 @@ function renderMemo(){
   const items=memoFilter==='전체'?MEMOS:MEMOS.filter(m=>m.proj===memoFilter);
   if(!items.length){el.innerHTML='<div style="font-size:13px;color:#aaa;padding:.5rem 0">저장된 메모가 없습니다.</div>';return}
   [...items].reverse().forEach(m=>{
+    const c=m.proj!=='전체'?projColor(m.proj):'#888';
     const d=document.createElement('div');d.className='note-card';
-    d.innerHTML=`<button class="note-del" onclick="delMemo(${m.id})"><i class="ti ti-x"></i></button><div class="note-time">${m.time}${m.proj!=='전체'?' · '+m.proj:''}</div><div class="note-text">${m.text.replace(/\n/g,'<br>')}</div>`;
+    d.style.borderLeft=`3px solid ${c}`;
+    d.innerHTML=`
+      <div class="note-actions">
+        <button class="note-act-btn" onclick="editMemo(${m.id})" title="수정"><i class="ti ti-pencil"></i></button>
+        <button class="note-act-btn" onclick="delMemo(${m.id})" title="삭제"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="note-time">${m.time}${m.proj!=='전체'?` · <span style="color:${c}">${m.proj}</span>`:''}</div>
+      <div class="note-text" id="mtext-${m.id}">${m.text.replace(/\n/g,'<br>')}</div>`;
     el.appendChild(d);
   });
+}
+function editMemo(id){
+  const m=MEMOS.find(x=>x.id===id);if(!m)return;
+  const el=document.getElementById('mtext-'+id);
+  if(el.tagName==='TEXTAREA'){
+    m.text=el.value;save('memos',MEMOS);renderMemo();return;
+  }
+  const ta=document.createElement('textarea');
+  ta.className='note-edit-area';ta.value=m.text;ta.id='mtext-'+id;
+  el.replaceWith(ta);ta.focus();
+  ta.onblur=()=>{m.text=ta.value;save('memos',MEMOS);renderMemo()};
 }
 function addMemo(){
   const txt=document.getElementById('memoInp').value.trim();if(!txt)return;
