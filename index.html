@@ -47,14 +47,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .month-hdr{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;margin-bottom:4px}
 .month-hdr span{text-align:center;font-size:11px;color:#888;padding:3px 0}
 .month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
-.mcell{min-height:80px;border:1px solid #e5e3dc;border-radius:6px;padding:3px 5px;cursor:pointer;transition:background .1s}
+.mcell{min-height:90px;border:1px solid #e5e3dc;border-radius:6px;padding:3px 5px;cursor:pointer;transition:background .1s}
 .mcell:hover{background:#f0ede8}
 .mcell.today{border-color:#1a1a18;border-width:1.5px}
 .mcell.selected{background:#f0ede8;border-color:#1a1a18}
 .mcell.other .dn{color:#ccc}
 .dn{font-size:11px;font-weight:500;color:#1a1a18;margin-bottom:2px}
 .edot{font-size:9px;display:flex;align-items:center;gap:2px;margin-bottom:1px}
-.edot span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:58px}
+.edot span{overflow:hidden;white-space:normal;word-break:break-all;max-width:100%;line-height:1.2}
 .nav-r{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .nav-r h3{font-size:14px;font-weight:500}
 .nbtn{background:none;border:1px solid #ddd;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px;color:#666}
@@ -128,8 +128,8 @@ h2{font-size:18px;font-weight:500;margin-bottom:2px}
   <span id="syncMsg">데이터 불러오는 중...</span>
 </div>
 <div class="top-tabs">
-  <button class="ttab on" onclick="sw('overview',this)">개요</button>
-  <button class="ttab" onclick="sw('projects',this)">사업별</button>
+  <button class="ttab on" onclick="sw('overview',this)">현황</button>
+  <button class="ttab" onclick="sw('projects',this)">사업 진행 현황</button>
   <button class="ttab" onclick="sw('spend',this)">지출 현황</button>
   <button class="ttab" onclick="sw('docs',this)">서류 관리</button>
   <button class="ttab" onclick="sw('daily',this)">데일리</button>
@@ -250,16 +250,9 @@ h2{font-size:18px;font-weight:500;margin-bottom:2px}
 
 <!-- 서류 관리 -->
 <div class="panel" id="p-docs">
-  <div class="proj-filter" id="docsFilter"></div>
-  <div class="card" style="padding:.75rem 1rem">
-    <div class="add-row">
-      <input type="text" id="docNameInp" placeholder="서류명..." onkeydown="if(event.key==='Enter')addDoc()">
-      <select id="docProjInp" style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#f8f7f4;max-width:150px;outline:none"></select>
-      <input type="text" id="docDeadInp" placeholder="기한(6/20)" style="max-width:80px">
-      <button class="add-btn" onclick="addDoc()">+ 추가</button>
-    </div>
-  </div>
-  <div id="docs-list"></div>
+  <!-- 사업 선택 탭 -->
+  <div class="proj-filter" id="docsProjTabs"></div>
+  <div id="docsContent"></div>
 </div>
 
 <!-- 데일리 -->
@@ -401,6 +394,7 @@ async function loadFromSheet(){
     if(data.SCHEDS)SCHEDS=data.SCHEDS;
     if(data.MEMOS)MEMOS=data.MEMOS;
     if(data.budgetSpent)budgetSpent=data.budgetSpent;
+    if(data.PROJ_NOTES)PROJ_NOTES=data.PROJ_NOTES;
     if(data.ids){npid=data.ids.npid||1;nsid=data.ids.nsid||1;ndid=data.ids.ndid||1;ntid=data.ids.ntid||1;nscid=data.ids.nscid||1;nmid=data.ids.nmid||1;}
     syncStatus('ok','불러옴 · '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
     renderAll();
@@ -408,7 +402,7 @@ async function loadFromSheet(){
 }
 async function saveToSheet(){
   syncStatus('saving','저장 중...');
-  const payload={PROJECTS,SPENDS,DOCS,TODOS,SCHEDS,MEMOS,budgetSpent,ids:{npid,nsid,ndid,ntid,nscid,nmid}};
+  const payload={PROJECTS,SPENDS,DOCS,TODOS,SCHEDS,MEMOS,budgetSpent,PROJ_NOTES,ids:{npid,nsid,ndid,ntid,nscid,nmid}};
   try{
     await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)});
     syncStatus('ok','저장됨 · '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
