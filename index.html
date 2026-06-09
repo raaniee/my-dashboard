@@ -123,6 +123,10 @@ h2{font-size:18px;font-weight:500;margin-bottom:2px}
   <span class="save-notice" id="saveNotice"></span>
 </div>
 <p class="date-str" id="todayStr"></p>
+<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#888;margin-bottom:1rem;padding:8px 12px;background:#fff;border:1px solid #e5e3dc;border-radius:8px">
+  <div id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0"></div>
+  <span id="syncMsg">데이터 불러오는 중...</span>
+</div>
 <div class="top-tabs">
   <button class="ttab on" onclick="sw('overview',this)">개요</button>
   <button class="ttab" onclick="sw('projects',this)">사업별</button>
@@ -364,6 +368,8 @@ h2{font-size:18px;font-weight:500;margin-bottom:2px}
 </div>
 
 <script>
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxEf7OZajKSf2s3L4CJXF9hRy1WUeSX_XMysu-S3x7MteWrIT3jrrQcacQDgx_nBbwA/exec';
+let saveTimer=null;
 const DK=['일','월','화','수','목','금','토'];
 const now=new Date();
 let vm=now.getMonth(),vy=now.getFullYear();
@@ -376,18 +382,46 @@ const PROJ_COLORS_HEX=['1D4E89','1D6A4A','D85A30','D4537E','7F77DD','BA7517'];
 function projColor(name){const i=PROJECTS.findIndex(p=>p.name===name);return i>=0?COLORS[i%COLORS.length]:'#888'}
 function hexRgba(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`}
 
-function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
-function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));showSaved()}catch(e){}}
-function showSaved(){const el=document.getElementById('saveNotice');el.textContent='저장됨 ✓';setTimeout(()=>el.textContent='',2000)}
+function syncStatus(state,msg){
+  const dot=document.getElementById('syncDot');
+  const txt=document.getElementById('syncMsg');
+  if(dot)dot.style.background=state==='ok'?'#1D9E75':state==='saving'?'#BA7517':'#D85A30';
+  if(txt)txt.textContent=msg;
+}
+async function loadFromSheet(){
+  syncStatus('saving','데이터 불러오는 중...');
+  try{
+    const res=await fetch(SCRIPT_URL+'?t='+Date.now());
+    const data=await res.json();
+    if(data.status==='empty'||data.status==='error'){syncStatus('ok','구글 시트 연결됨 (새 데이터)');renderAll();return;}
+    if(data.PROJECTS)PROJECTS=data.PROJECTS;
+    if(data.SPENDS)SPENDS=data.SPENDS;
+    if(data.DOCS)DOCS=data.DOCS;
+    if(data.TODOS)TODOS=data.TODOS;
+    if(data.SCHEDS)SCHEDS=data.SCHEDS;
+    if(data.MEMOS)MEMOS=data.MEMOS;
+    if(data.budgetSpent)budgetSpent=data.budgetSpent;
+    if(data.ids){npid=data.ids.npid||1;nsid=data.ids.nsid||1;ndid=data.ids.ndid||1;ntid=data.ids.ntid||1;nscid=data.ids.nscid||1;nmid=data.ids.nmid||1;}
+    syncStatus('ok','불러옴 · '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
+    renderAll();
+  }catch(e){syncStatus('err','불러오기 실패');renderAll();}
+}
+async function saveToSheet(){
+  syncStatus('saving','저장 중...');
+  const payload={PROJECTS,SPENDS,DOCS,TODOS,SCHEDS,MEMOS,budgetSpent,ids:{npid,nsid,ndid,ntid,nscid,nmid}};
+  try{
+    await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)});
+    syncStatus('ok','저장됨 · '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){syncStatus('err','저장 실패');}
+}
+function save(){
+  if(saveTimer)clearTimeout(saveTimer);
+  syncStatus('saving','저장 대기 중...');
+  saveTimer=setTimeout(()=>saveToSheet(),2000);
+}
 
-let PROJECTS=load('projects',[]);
-let SPENDS=load('spends',[]);
-let DOCS=load('docs',[]);
-let TODOS=load('todos',[]);
-let SCHEDS=load('scheds',[]);
-let MEMOS=load('memos',[]);
-let npid=load('npid',1),nsid=load('nsid',1),ndid=load('ndid',1);
-let ntid=load('ntid',1),nscid=load('nscid',1),nmid=load('nmid',1);
+let PROJECTS=[],SPENDS=[],DOCS=[],TODOS=[],SCHEDS=[],MEMOS=[];
+let npid=1,nsid=1,ndid=1,ntid=1,nscid=1,nmid=1;
 
 // 예산 데이터 (localStorage에서 지출액 로드)
 const BUDGET_DATA=[
@@ -417,7 +451,7 @@ const BUDGET_DATA=[
     {bimok:'사무관리비',semok:'제안서 평가위원 수당(투어)',basis:'300,000원×7명×1회',budget:1400},
   ]},
 ];
-let budgetSpent=load('budgetSpent',{});
+let budgetSpent={};
 
 function fmtNum(n){return n==null?'-':Number(n).toLocaleString()}
 
@@ -476,7 +510,7 @@ function updateSpent(inp){
   const key=inp.dataset.key;
   const val=parseFloat(inp.value)||0;
   budgetSpent[key]=val;
-  save('budgetSpent',budgetSpent);
+  save();
   // 잔액 업데이트
   const td=inp.closest('tr').querySelectorAll('td');
   const budgetVal=parseFloat(td[3].textContent.replace(/,/g,''))||0;
@@ -496,9 +530,9 @@ function updateSpent(inp){
 }
 
 /* ── 지출 목록 ── */
-let spendFilter=load('spendFilter','전체');
+let spendFilter='전체';
 function renderSpendList(){
-  renderProjFilter('spendFilter',spendFilter,v=>{spendFilter=v;save('spendFilter',v)});
+  renderProjFilter('spendFilter',spendFilter,v=>{spendFilter=v;save()});
   fillSelects();
   const el=document.getElementById('spend-items');el.innerHTML='';
   const items=spendFilter==='전체'?SPENDS:SPENDS.filter(s=>s.proj===spendFilter);
@@ -517,15 +551,15 @@ function renderSpendList(){
   });
   el.appendChild(card);
 }
-function updSpendSt(id,v){const s=SPENDS.find(x=>x.id===id);if(s){s.status=v;save('spends',SPENDS);}renderOverview()}
+function updSpendSt(id,v){const s=SPENDS.find(x=>x.id===id);if(s){s.status=v;save();}renderOverview()}
 function addSpend(){
   const item=document.getElementById('spItemInp').value.trim();if(!item)return;
   SPENDS.push({id:nsid++,item,amt:document.getElementById('spAmtInp').value||'0',proj:document.getElementById('spProjInp').value,status:document.getElementById('spStInp').value});
-  save('spends',SPENDS);save('nsid',nsid);
+  save();save('nsid',nsid);
   document.getElementById('spItemInp').value='';document.getElementById('spAmtInp').value='';
   renderSpendList();renderOverview();
 }
-function delSpend(id){SPENDS.splice(SPENDS.findIndex(s=>s.id===id),1);save('spends',SPENDS);renderSpendList();renderOverview()}
+function delSpend(id){SPENDS.splice(SPENDS.findIndex(s=>s.id===id),1);save();renderSpendList();renderOverview()}
 
 function sw(id,btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
@@ -672,17 +706,17 @@ function addProjSched(){
   const n=document.getElementById('projSchedName').value.trim();if(!n||!selectedProjId)return;
   const p=PROJECTS.find(x=>x.id===selectedProjId);if(!p)return;
   SCHEDS.push({id:nscid++,date:document.getElementById('projSchedDate').value||'미정',time:document.getElementById('projSchedTime').value||'',name:n,proj:p.name});
-  save('scheds',SCHEDS);save('nscid',nscid);
+  save();save('nscid',nscid);
   document.getElementById('projSchedName').value='';document.getElementById('projSchedDate').value='';document.getElementById('projSchedTime').value='';
   renderProjDetail();
 }
-function updProg(id,v,lbl){const p=PROJECTS.find(x=>x.id===id);if(p){p.progress=parseInt(v);lbl.textContent=v+'%';save('projects',PROJECTS);}renderOverview()}
-function updStatus(id,v){const p=PROJECTS.find(x=>x.id===id);if(p){p.status=v;save('projects',PROJECTS);}renderOverview()}
-function delProj(id){PROJECTS.splice(PROJECTS.findIndex(p=>p.id===id),1);save('projects',PROJECTS);renderAll()}
+function updProg(id,v,lbl){const p=PROJECTS.find(x=>x.id===id);if(p){p.progress=parseInt(v);lbl.textContent=v+'%';save();}renderOverview()}
+function updStatus(id,v){const p=PROJECTS.find(x=>x.id===id);if(p){p.status=v;save();}renderOverview()}
+function delProj(id){PROJECTS.splice(PROJECTS.findIndex(p=>p.id===id),1);save();renderAll()}
 function addProj(){
   const n=document.getElementById('projNameInp').value.trim();if(!n)return;
   PROJECTS.push({id:npid++,name:n,budget:document.getElementById('projBudInp').value||'미정',status:document.getElementById('projStInp').value,progress:0});
-  save('projects',PROJECTS);save('npid',npid);
+  save();save('npid',npid);
   document.getElementById('projNameInp').value='';document.getElementById('projBudInp').value='';
   renderAll();
 }
@@ -699,9 +733,9 @@ function renderProjFilter(elId,cur,setCb){
 }
 
 /* ── 서류 ── */
-let docsFilter=load('docsFilter','전체');
+let docsFilter='전체';
 function renderDocs(){
-  renderProjFilter('docsFilter',docsFilter,v=>{docsFilter=v;save('docsFilter',v)});fillSelects();
+  renderProjFilter('docsFilter',docsFilter,v=>{docsFilter=v;save()});fillSelects();
   const el=document.getElementById('docs-list');el.innerHTML='';
   const items=docsFilter==='전체'?DOCS:DOCS.filter(d=>d.proj===docsFilter);
   if(!items.length){el.innerHTML='<div style="padding:1rem;font-size:13px;color:#aaa">등록된 서류가 없습니다.</div>';return}
@@ -713,16 +747,16 @@ function renderDocs(){
     <label class="chk-lbl" for="${cid}">${d.name}<span style="font-size:11px;color:#888;margin-left:6px">${d.proj}</span></label>
     <span class="row-date">${d.deadline}</span>
     <button class="del-btn" onclick="delDoc(${d.id})"><i class="ti ti-x"></i></button>`;
-    r.querySelector('.chk').onchange=e=>{d.done=e.target.checked;save('docs',DOCS);renderOverview()};
+    r.querySelector('.chk').onchange=e=>{d.done=e.target.checked;save();renderOverview()};
     card.appendChild(r);
   });el.appendChild(card);
 }
 function addDoc(){
   const n=document.getElementById('docNameInp').value.trim();if(!n)return;
   DOCS.push({id:ndid++,name:n,proj:document.getElementById('docProjInp').value,deadline:document.getElementById('docDeadInp').value||'미정',done:false});
-  save('docs',DOCS);save('ndid',ndid);document.getElementById('docNameInp').value='';document.getElementById('docDeadInp').value='';renderAll();
+  save();save('ndid',ndid);document.getElementById('docNameInp').value='';document.getElementById('docDeadInp').value='';renderAll();
 }
-function delDoc(id){DOCS.splice(DOCS.findIndex(d=>d.id===id),1);save('docs',DOCS);renderAll()}
+function delDoc(id){DOCS.splice(DOCS.findIndex(d=>d.id===id),1);save();renderAll()}
 
 /* ── 일정 수정 공통 ── */
 function startSchedEdit(id){const s=SCHEDS.find(x=>x.id===id);if(s)s._editing=true;renderProjDetail();renderSchedule();renderDaily()}
@@ -731,10 +765,10 @@ function saveSchedEdit(id){
   const s=SCHEDS.find(x=>x.id===id);if(!s)return;
   const tn=document.getElementById('es-t-'+id),nn=document.getElementById('es-n-'+id);
   if(tn)s.time=tn.value.trim();if(nn&&nn.value.trim())s.name=nn.value.trim();
-  delete s._editing;save('scheds',SCHEDS);renderProjDetail();renderSchedule();renderDaily();
+  delete s._editing;save();renderProjDetail();renderSchedule();renderDaily();
 }
 function delSchedById(id){
-  SCHEDS.splice(SCHEDS.findIndex(s=>s.id===id),1);save('scheds',SCHEDS);
+  SCHEDS.splice(SCHEDS.findIndex(s=>s.id===id),1);save();
   renderProjDetail();renderSchedule();renderDaily();
   if(selectedDayKey){const p=selectedDayKey.split('-');renderDayPanel(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]))}
 }
@@ -771,20 +805,20 @@ function renderDaily(){
   dt.forEach(t=>{
     const r=document.createElement('div');r.className='row';const cid='dt'+t.id;
     if(t._editing){r.innerHTML=`<div class="inline-edit"><input type="text" value="${t.text}" id="et-${t.id}" style="flex:1"><button class="add-btn" style="padding:3px 10px" onclick="saveTodoEdit(${t.id})">저장</button><button class="del-btn" onclick="cancelTodoEdit(${t.id})"><i class="ti ti-x"></i></button></div>`;}
-    else{r.innerHTML=`<input type="checkbox" class="chk" id="${cid}" ${t.done?'checked':''}><label class="chk-lbl" for="${cid}">${t.text}</label><button class="edit-btn" onclick="startTodoEdit(${t.id})"><i class="ti ti-pencil"></i></button><button class="del-btn" onclick="delTodo(${t.id})"><i class="ti ti-x"></i></button>`;r.querySelector('.chk').onchange=e=>{t.done=e.target.checked;save('todos',TODOS)};}
+    else{r.innerHTML=`<input type="checkbox" class="chk" id="${cid}" ${t.done?'checked':''}><label class="chk-lbl" for="${cid}">${t.text}</label><button class="edit-btn" onclick="startTodoEdit(${t.id})"><i class="ti ti-pencil"></i></button><button class="del-btn" onclick="delTodo(${t.id})"><i class="ti ti-x"></i></button>`;r.querySelector('.chk').onchange=e=>{t.done=e.target.checked;save()};}
     tl.appendChild(r);
   });
 }
 function startTodoEdit(id){const t=TODOS.find(x=>x.id===id);if(t)t._editing=true;renderDaily()}
 function cancelTodoEdit(id){const t=TODOS.find(x=>x.id===id);if(t)delete t._editing;renderDaily()}
-function saveTodoEdit(id){const t=TODOS.find(x=>x.id===id);if(!t)return;const inp=document.getElementById('et-'+id);if(inp&&inp.value.trim())t.text=inp.value.trim();delete t._editing;save('todos',TODOS);renderDaily()}
-function addDailyTodo(){const inp=document.getElementById('dailyTodoInp');if(!inp.value.trim())return;const y=dailyDate.getFullYear(),m=dailyDate.getMonth(),d=dailyDate.getDate();TODOS.push({id:ntid++,text:inp.value.trim(),done:false,dkey:dateKey(y,m,d)});save('todos',TODOS);save('ntid',ntid);inp.value='';renderDaily()}
-function delTodo(id){TODOS.splice(TODOS.findIndex(t=>t.id===id),1);save('todos',TODOS);renderDaily()}
+function saveTodoEdit(id){const t=TODOS.find(x=>x.id===id);if(!t)return;const inp=document.getElementById('et-'+id);if(inp&&inp.value.trim())t.text=inp.value.trim();delete t._editing;save();renderDaily()}
+function addDailyTodo(){const inp=document.getElementById('dailyTodoInp');if(!inp.value.trim())return;const y=dailyDate.getFullYear(),m=dailyDate.getMonth(),d=dailyDate.getDate();TODOS.push({id:ntid++,text:inp.value.trim(),done:false,dkey:dateKey(y,m,d)});save();save('ntid',ntid);inp.value='';renderDaily()}
+function delTodo(id){TODOS.splice(TODOS.findIndex(t=>t.id===id),1);save();renderDaily()}
 function addDailySched(){
   const n=document.getElementById('dailyNameInp').value.trim();if(!n)return;
   const y=dailyDate.getFullYear(),m=dailyDate.getMonth(),d=dailyDate.getDate();
   SCHEDS.push({id:nscid++,date:`${m+1}/${d}`,time:document.getElementById('dailyTimeInp').value||'',name:n,proj:document.getElementById('dailyProjInp').value||''});
-  save('scheds',SCHEDS);save('nscid',nscid);document.getElementById('dailyNameInp').value='';document.getElementById('dailyTimeInp').value='';renderDaily();renderSchedule();
+  save();save('nscid',nscid);document.getElementById('dailyNameInp').value='';document.getElementById('dailyTimeInp').value='';renderDaily();renderSchedule();
 }
 
 /* ── 스케줄 ── */
@@ -870,21 +904,21 @@ function addDayPanelSched(){
   const n=document.getElementById('dpNameInp').value.trim();if(!n||!selectedDayKey)return;
   const parts=selectedDayKey.split('-');
   SCHEDS.push({id:nscid++,date:`${parseInt(parts[1])}/${parseInt(parts[2])}`,time:document.getElementById('dpTimeInp').value||'',name:n,proj:document.getElementById('dpProjInp').value||''});
-  save('scheds',SCHEDS);save('nscid',nscid);document.getElementById('dpNameInp').value='';document.getElementById('dpTimeInp').value='';
+  save();save('nscid',nscid);document.getElementById('dpNameInp').value='';document.getElementById('dpTimeInp').value='';
   const p=selectedDayKey.split('-');renderDayPanel(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));renderSchedule();
 }
 function addWeekSched(){
   const n=document.getElementById('wkNameInp').value.trim();if(!n)return;
   SCHEDS.push({id:nscid++,date:document.getElementById('wkDateInp').value||'미정',time:document.getElementById('wkTimeInp').value||'',name:n,proj:document.getElementById('wkProjInp').value||''});
-  save('scheds',SCHEDS);save('nscid',nscid);document.getElementById('wkNameInp').value='';document.getElementById('wkDateInp').value='';document.getElementById('wkTimeInp').value='';renderSchedule();
+  save();save('nscid',nscid);document.getElementById('wkNameInp').value='';document.getElementById('wkDateInp').value='';document.getElementById('wkTimeInp').value='';renderSchedule();
 }
 function chgMonth(d){vm+=d;if(vm>11){vm=0;vy++}if(vm<0){vm=11;vy--}renderSchedule()}
 function chgWeek(d){vWeekOffset+=d;renderSchedule()}
 
 /* ── 메모 ── */
-let memoFilter=load('memoFilter','전체');
+let memoFilter='전체';
 function renderMemo(){
-  renderProjFilter('memoFilter',memoFilter,v=>{memoFilter=v;save('memoFilter',v)});fillSelects();
+  renderProjFilter('memoFilter',memoFilter,v=>{memoFilter=v;save()});fillSelects();
   const el=document.getElementById('memo-list');el.innerHTML='';
   const items=memoFilter==='전체'?MEMOS:MEMOS.filter(m=>m.proj===memoFilter);
   if(!items.length){el.innerHTML='<div style="font-size:13px;color:#aaa;padding:.5rem 0">저장된 메모가 없습니다.</div>';return}
@@ -900,17 +934,17 @@ function renderMemo(){
 function editMemo(id){
   const m=MEMOS.find(x=>x.id===id);if(!m)return;
   const el=document.getElementById('mtext-'+id);
-  if(el&&el.tagName==='TEXTAREA'){m.text=el.value;save('memos',MEMOS);renderMemo();return}
+  if(el&&el.tagName==='TEXTAREA'){m.text=el.value;save();renderMemo();return}
   const ta=document.createElement('textarea');ta.className='note-edit-area';ta.value=m.text;ta.id='mtext-'+id;
-  if(el)el.replaceWith(ta);ta.focus();ta.onblur=()=>{m.text=ta.value;save('memos',MEMOS);renderMemo()};
+  if(el)el.replaceWith(ta);ta.focus();ta.onblur=()=>{m.text=ta.value;save();renderMemo()};
 }
 function addMemo(){
   const txt=document.getElementById('memoInp').value.trim();if(!txt)return;
   const t=new Date();const ts=`${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
   MEMOS.push({id:nmid++,text:txt,proj:document.getElementById('memoProjSel').value||'전체',time:ts});
-  save('memos',MEMOS);save('nmid',nmid);document.getElementById('memoInp').value='';renderMemo();
+  save();save('nmid',nmid);document.getElementById('memoInp').value='';renderMemo();
 }
-function delMemo(id){MEMOS.splice(MEMOS.findIndex(m=>m.id===id),1);save('memos',MEMOS);renderMemo()}
+function delMemo(id){MEMOS.splice(MEMOS.findIndex(m=>m.id===id),1);save();renderMemo()}
 
 function renderAll(){
   fillSelects();renderOverview();renderProjects();renderSpendList();renderDocs();renderSchedule();renderMemo();
@@ -920,8 +954,7 @@ function renderAll(){
 }
 
 document.getElementById('todayStr').textContent=`${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${DK[now.getDay()]})`;
-renderAll();
-renderBudget();
+loadFromSheet();
 </script>
 </body>
 </html>
