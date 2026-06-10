@@ -384,9 +384,12 @@ function syncStatus(state,msg){
 async function loadFromSheet(){
   syncStatus('saving','데이터 불러오는 중...');
   try{
-    const res=await fetch(SCRIPT_URL+'?t='+Date.now());
-    const data=await res.json();
-    if(data.status==='empty'||data.status==='error'){syncStatus('ok','구글 시트 연결됨 (새 데이터)');renderAll();return;}
+    const res=await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`,{
+      headers:{'Authorization':'token '+GH_TOKEN,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(res.status===404){syncStatus('ok','연결됨 (새 데이터)');renderAll();return;}
+    const json=await res.json();
+    const data=JSON.parse(atob(json.content.replace(/\n/g,'')));
     if(data.PROJECTS)PROJECTS=data.PROJECTS;
     if(data.SPENDS)SPENDS=data.SPENDS;
     if(data.DOCS)DOCS=data.DOCS;
@@ -396,15 +399,28 @@ async function loadFromSheet(){
     if(data.budgetSpent)budgetSpent=data.budgetSpent;
     if(data.PROJ_NOTES)PROJ_NOTES=data.PROJ_NOTES;
     if(data.ids){npid=data.ids.npid||1;nsid=data.ids.nsid||1;ndid=data.ids.ndid||1;ntid=data.ids.ntid||1;nscid=data.ids.nscid||1;nmid=data.ids.nmid||1;}
+    window._ghSha=json.sha;
     syncStatus('ok','불러옴 · '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
     renderAll();
-  }catch(e){syncStatus('err','불러오기 실패');renderAll();}
+  }catch(e){
+    syncStatus('err','불러오기 실패 - 오프라인 모드');
+    renderAll();
+  }
 }
 async function saveToSheet(){
   syncStatus('saving','저장 중...');
   const payload={PROJECTS,SPENDS,DOCS,TODOS,SCHEDS,MEMOS,budgetSpent,PROJ_NOTES,ids:{npid,nsid,ndid,ntid,nscid,nmid}};
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const body={message:'dashboard data update',content};
+  if(window._ghSha)body.sha=window._ghSha;
   try{
-    await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)});
+    const res=await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`,{
+      method:'PUT',
+      headers:{'Authorization':'token '+GH_TOKEN,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    const json=await res.json();
+    if(json.content)window._ghSha=json.content.sha;
     syncStatus('ok','저장됨 · '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){syncStatus('err','저장 실패');}
 }
